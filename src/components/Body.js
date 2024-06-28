@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { v4 as uuidv4 } from 'uuid';
 
 
@@ -7,27 +7,51 @@ const Body = () => {
     const [todo,setTodo] = useState("");
     const [todos,setTodos] = useState([]);
 
+    const [showFinished, setShowFinished] = useState(true);
+
+
+    useEffect(() => {
+      let todoString = localStorage.getItem("todos")
+      if(todoString){
+        let todos = JSON.parse(localStorage.getItem("todos"))
+        setTodos(todos);
+      }
+    },[])
+
+    const toggelFinish = () => {
+      setShowFinished(!showFinished);
+    }
+
+    const saveToLS = () => {
+      localStorage.setItem("todos", JSON.stringify(todos))
+    }
+
     const handleAdd= ()=>{
-        setTodos([...todos, {id:uuidv4(), todo, isCompleted: false}])
-        setTodo("") 
+        setTodos([...todos, {id:uuidv4(), todo, isCompleted: false}]) 
+        setTodo("");
+        saveToLS();
       }
       
     const handleDelete = (e,id) => {
       const newTodo = todos.filter((item) => id !== item.id);
       setTodos(newTodo);
+      saveToLS();
     }
 
     const handleEdit = (e,id) => {
       const tempTodo = todos.filter((item) => item.id === id);
-      setTodo(tempTodo[0].todo);
+      setTodo(tempTodo[0].todo);                // filter returns an array on its 0th index we get tempTodo, which is an object where we need to edit its .todo
+      //console.log(tempTodo[0]);
       setTodos(todos.filter((item) => item.id !== id));
+      saveToLS();
     }
 
     const handleCheckBox = (e,id) => {
-      const index = todos.findIndex((item) => item.id === id);
-      let newTodo = [...todos];
-      newTodo[index].isCompleted = !newTodo[index].isCompleted;
-      setTodos(newTodo);
+      const index = todos.findIndex((item) => item.id === id);        // here we return the position on which said particular todo is present by findIndex
+      let newTodos = [...todos];                                      
+      newTodos[index].isCompleted = !newTodos[index].isCompleted;     //of that particular index we set its isComplete to opposite
+      setTodos(newTodos);
+      saveToLS();
     }
 
   return (
@@ -35,13 +59,14 @@ const Body = () => {
     <h2 className='text-white text-7xl text-center mt-28 mb-16'> Just do it!!!</h2>
     <div className="flex justify-center ">
       <input className='px-4 p-2 my-4 bg-black text-white rounded-s-3xl w-2/5' placeholder='Add a task' value={todo} onChange={ (e) => setTodo(e.target.value)} />
-      <button className='bg-white text-black px-4 my-4 rounded-e-3xl w-0.5/5' onClick={handleAdd}>Pin it</button>
+      <button className='bg-white text-black px-4 my-4 rounded-e-3xl w-0.5/5' disabled={todo.length < 3} onClick={handleAdd}>Pin it</button>
     </div>
+    <input type='checkbox' checked={showFinished} onChange={toggelFinish} className='ml-[32rem]' /> ShowFinished Task
     <div className='todos ml-[26rem] w-1/2 justify-self-center border  border-black mt-6' >
     {todos.map( item => {
 
     
-        return <div key={item.id} className='todo flex justify-between py-3 shadow-2xl rounded-3xl bg-slate-600 m-8 w-[26rem] ml-[14rem]'>
+        return (showFinished || !item.isCompleted) && <div key={item.id} className='todo flex justify-between py-3 shadow-2xl rounded-3xl bg-slate-600 m-8 w-[26rem] ml-[14rem]'>
             <div className= {item.isCompleted? "line-through pl-4 text-white place-content-center" : "pl-4 text-white place-content-center" } > 
                 {item.todo} 
             </div>
